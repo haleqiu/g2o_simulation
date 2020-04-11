@@ -77,7 +77,7 @@ template void rot_to_euler_zyx<float>(const Matrix3f&, float&, float&, float&);
 
 template <class T>
 Eigen::Matrix<T,3,3> euler_zyx_to_rot(const T& roll,const T& pitch,const T& yaw)
-{   std::cout << "wired" << '\n';
+{   
     T cp = cos(pitch);
     T sp = sin(pitch);
     T sr = sin(roll);
