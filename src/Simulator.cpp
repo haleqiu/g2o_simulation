@@ -8,6 +8,37 @@ Simulator::Simulator(){
   std::cerr << "LandmarkNoise: "<<LandmarkNoise << '\n';
 };
 
+Simulator::Simulator(const std::string &strSettingsFile){
+  TransNoise << 0,0,0;
+  RotNoise << 0,0,0;
+  LandmarkNoise << 0.05,0.05,0.05;
+  std::cerr << "LandmarkNoise: "<<LandmarkNoise << '\n';
+
+  cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
+  if(!fsSettings.isOpened())
+  {
+     cerr << "Failed to open settings file at: " << strSettingsFile << endl;
+     exit(-1);
+  }
+
+  numNodes = fsSettings["Simulator.numNodes"];
+  steps = fsSettings["Simulator.steps"];//TODO
+  stepLen = fsSettings["Simulator.stepLen"];
+  boundArea = fsSettings["Simulator.boundArea"];//TODO
+  landmarksRange = fsSettings["Simulator.landmarksRange"];
+  maxSensorRangeLandmarks = 2.5 * stepLen;//it decide how many
+  landMarksPerSquareMeter = fsSettings["Simulator.landMarksPerSquareMeter"];
+
+  // FALG
+  mbDistanceGroundTruthInit = fsSettings["Optimizer.DistanceGroundTruthInit"];
+  mbDebug = fsSettings["Optimizer.Debug"];
+
+  //Optimizer
+  Dynum = fsSettings["Optimizer.Dynum"];
+  DyVertexNum = fsSettings["Optimizer.vertexnum"];
+
+};
+
 void Simulator::InitializeFrames()
 {
   //first pose initialization
@@ -103,7 +134,6 @@ void Simulator::InitRigidEdgesFully(PointPtrVec& dynamic_points, int obj_id){
   for (PointPtrVec::iterator pt=dynamic_points.begin(); pt!=dynamic_points.end(); ++pt){
     PointPtrVec::iterator ptt = std::next(pt);
     while (ptt!=dynamic_points.end()){
-      std::cerr << "pt: "<<(*pt)->idx<<"ptt: "<<(*ptt)->idx << '\n';
       RigidEdge edge;
       edge.obj_id = obj_id;
       double distance = ((*pt)->truepos - (*ptt)->truepos).norm();
@@ -114,7 +144,26 @@ void Simulator::InitRigidEdgesFully(PointPtrVec& dynamic_points, int obj_id){
     }
   }
 };
-
+void Simulator::InitRigidEdgesThree(PointPtrVec& dynamic_points, int obj_id){
+  for (PointPtrVec::iterator pt=dynamic_points.begin(); pt!=dynamic_points.end(); ++pt){
+    if (*pt != dynamic_points.back()){//a pointer while back is not
+      RigidEdge edge;
+      edge.obj_id = obj_id;
+      double distance = ((*pt)->truepos - (*std::next(pt))->truepos).norm();
+      edge.vertex_id = iGlobalId++;
+      edge.gtdistance = distance;
+      vRigidEdges.push_back(edge);
+    }
+    else{
+      RigidEdge edge;
+      edge.obj_id = obj_id;
+      double distance = ((*pt)->truepos - (*dynamic_points.begin())->truepos).norm();
+      edge.vertex_id = iGlobalId++;
+      edge.gtdistance = distance;
+      vRigidEdges.push_back(edge);
+    }
+  }
+};
 void Simulator::InitRigidEdgesTwo(PointPtrVec& dynamic_points, int obj_id){
   for (PointPtrVec::iterator pt=dynamic_points.begin(); pt!=dynamic_points.end(); ++pt){
     if (*pt != dynamic_points.back()){//a pointer while back is not
@@ -170,10 +219,39 @@ void Simulator::AddingRigidEdgeFully(DyObject& dyobj){
   }
 }
 
-void Simulator::AddingDynamicCircle()
-{
-  std::cerr << "Adding Dynamic points in circle" << '\n';
-  std::vector<int> rigidids;
+void Simulator::InitDynamicShape(){
+  //init the triangular
+  std::cerr << "Init the shape of triangular" << '\n';
+  double trianglelength = 2;
+  int lengthnumber = Dynum/3;
+  double d = trianglelength / lengthnumber;
+
+  for (int len=0; len < lengthnumber; len++){
+    Point* l = new Point(-1);
+    l->truepos[0] = std::cos(pcl::deg2rad(60.0))*(len*d);
+    l->truepos[1] = std::sin(pcl::deg2rad(60.0))*(trianglelength - len*d);
+    l->truepos[2] = 0;
+    vDynamicShape.push_back(l);
+  }
+  for (int len=0; len < lengthnumber; len++){
+    Point* l = new Point(-1);
+    l->truepos[0] = std::cos(pcl::deg2rad(60.0))*trianglelength-len*d;
+    l->truepos[1] = 0;
+    l->truepos[2] = 0;
+    vDynamicShape.push_back(l);
+  }
+  for (int len=0; len < lengthnumber; len++){
+    Point* l = new Point(-1);
+    l->truepos[0] = std::cos(pcl::deg2rad(60.0))*(len*d-trianglelength);
+    l->truepos[1] = std::sin(pcl::deg2rad(60.0))*(len*d);
+    l->truepos[2] = 0;
+    vDynamicShape.push_back(l);
+  }
+}
+
+void Simulator::AddingDynamicShape(){
+  InitDynamicShape();
+  std::cerr << "Adding Dynamic shape" << '\n';
   for (FrameVec::iterator it = gridposes.begin(); it != gridposes.end(); ++it){
     Eigen::Affine3d objmotion;
     Eigen::Matrix3d _R = euler_zyx_to_rot<double>(Rand::uniform_rand(-0.1, 0.1), Rand::uniform_rand(-0.1, 0.1), Rand::uniform_rand(-0.1, 0.3));
@@ -181,7 +259,45 @@ void Simulator::AddingDynamicCircle()
     objmotion.translation()<<0+Rand::uniform_rand(-0.5, 0.5),1+Rand::uniform_rand(-0.5, 0.5),0+Rand::uniform_rand(-0.5, 0.5);
     // initiate the dynamic object vector
     DyObject dyobj;
-    Point* temppoint;
+    for (PointPtrVec::iterator pt = vDynamicShape.begin(); pt != vDynamicShape.end();++pt){
+      Point* l = new Point(0);
+      l->truepos[0] = it->transform.translation().x() + (*pt)->truepos[0];
+      l->truepos[1] = it->transform.translation().y() + (*pt)->truepos[1];
+      l->truepos[2] = it->transform.translation().z() + (*pt)->truepos[2];
+      // l->truepos = objmotion * l->truepos;
+      l->simulatedpos[0] =l->truepos[0] + Rand::gauss_rand(0., LandmarkNoise[0]);
+      l->simulatedpos[1] =l->truepos[1] + Rand::gauss_rand(0., LandmarkNoise[1]);
+      l->simulatedpos[2] =l->truepos[2] + Rand::gauss_rand(0., LandmarkNoise[2]);
+
+      l->idx = iGlobalId++;
+      l->seenBy.push_back(it->idx);
+      dyobj.dylandmarks.push_back(l);
+      dyobj.id = 2;
+      vDynamicLandmarks.push_back(l);
+    }
+    //initialize the number of distance vertex
+    if (it == gridposes.begin()){
+      InitRigidEdgesFully(dyobj.dylandmarks,1);
+      // InitRigidEdgesTwo(dyobj.dylandmarks,1);
+    }
+    //TODO:add association
+
+    AddingRigidEdgeFully(dyobj);
+    // AddingRigidEdgeTwo(dyobj);
+    it->seenedobjs.push_back(dyobj);
+  }
+}
+
+void Simulator::AddingDynamicCircle()
+{
+  std::cerr << "Adding Dynamic points in circle" << '\n';
+  for (FrameVec::iterator it = gridposes.begin(); it != gridposes.end(); ++it){
+    Eigen::Affine3d objmotion;
+    Eigen::Matrix3d _R = euler_zyx_to_rot<double>(Rand::uniform_rand(-0.1, 0.1), Rand::uniform_rand(-0.1, 0.1), Rand::uniform_rand(-0.1, 0.3));
+    objmotion.rotate(Eigen::AngleAxisd(_R));
+    objmotion.translation()<<0+Rand::uniform_rand(-0.5, 0.5),1+Rand::uniform_rand(-0.5, 0.5),0+Rand::uniform_rand(-0.5, 0.5);
+    // initiate the dynamic object vector
+    DyObject dyobj;
     for (float angle(0.0); angle < 360.0; angle += dCircleAngle)
     {
       Point* l = new Point(0);
@@ -203,9 +319,6 @@ void Simulator::AddingDynamicCircle()
     if (it == gridposes.begin()){
       InitRigidEdgesFully(dyobj.dylandmarks,1);
       // InitRigidEdgesTwo(dyobj.dylandmarks,1);
-
-      std::cerr << "debug" << '\n';
-
     }
     //TODO:add association
 

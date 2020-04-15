@@ -27,36 +27,49 @@ struct RigidEdge{//means one constraint one line
   int obj_id;
 };
 
+
 class Simulator{
   public:
     Simulator();
+    Simulator(const std::string &strSettingsFile);
+
     int iGlobalId;
     LandmarkGrid grid;
     FrameVec gridposes;
     PointPtrVec Landmarks;
     PointPtrVec vDynamicLandmarks;
+    PointPtrVec vDynamicShape;
     std::vector<RigidEdge> vRigidEdges;
 
     //TODO:FileStorage
-    int numNodes = 20;
+    int numNodes = 10;
     int steps = 5;//TODO
-    double stepLen = 1.0;
+    double stepLen = 3.0;
     int boundArea = 50;//TODO
     int landmarksRange = 2;
     double maxSensorRangeLandmarks = 2.5 * stepLen;//it decide how many
     int landMarksPerSquareMeter = 1;
 
+    // FALG
+    int mbDistanceGroundTruthInit = 0;
+    int mbDebug = 0;
+
+    //Optimizer
+    int Dynum = 10;
+    int DyVertexNum = 2;
     //expected identifier before numeric constant
     Eigen::Vector3d TransNoise;
     Eigen::Vector3d RotNoise;
     Eigen::Vector3d LandmarkNoise;
 
     void InitializeFrames();//adding gridposes
+    void InitDynamicShape();//triangular now
     void AddingStaticLandmarks();//adding Landmarks
     void AddingDynamicCircle();
+    void AddingDynamicShape();
 
 
-    const double dCircleAngle = 18.0;
+    const double dCircleAngle = 18.0;//if using circle
     double kGtDistance = 0;
 
   private:
@@ -67,6 +80,8 @@ class Simulator{
     void AddingRigidEdgeFully(DyObject & dyobj);
     void InitRigidEdgesTwo(PointPtrVec& dynamic_points, int obj_id);
     void AddingRigidEdgeTwo(DyObject& dyobj);
+    void InitRigidEdgesThree(PointPtrVec& dynamic_points, int obj_id);
+
 
 };
 

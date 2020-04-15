@@ -39,7 +39,6 @@ void EdgeRigidBody::computeError_debug()
   double _distance = subtract.norm();
   std::cerr << "_distance" <<_distance<< '\n';
   std::cerr << "eroror" << distanceVertex->estimate().norm() - _distance<<'\n';;
-  // _error = distanceVertex->estimate() - subtract;
 };
 
 double EdgeRigidBody::compute_error_norm(){
@@ -65,7 +64,7 @@ void EdgeRigidBody::computeError(){
 
 };
 
-class EdgeRigidBodyDouble: public g2o::BaseMultiEdge<3, Eigen::Vector3d>
+class EdgeRigidBodyDouble: public g2o::BaseMultiEdge<1, double>
 {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -90,21 +89,21 @@ void EdgeRigidBodyDouble::computeError_debug()
 
   if (pointVertexfrom==nullptr||pointVertexto==nullptr||distanceVertex==nullptr)
       std::cout<<"bad casting!!!!!!!!!!!!!"<<std::endl;
-  std::cerr << "pointVertexfrom->estimate()"<<pointVertexfrom->estimate() << '\n';
-  std::cerr << "pointVertexto->estimate()"<<pointVertexto->estimate() << '\n';
+  std::cerr << "pointVertexfrom->estimate()"<<"\n"<<pointVertexfrom->estimate() << '\n';
+  std::cerr << "pointVertexto->estimate()"<<"\n"<<pointVertexto->estimate() << '\n';
 
   Eigen::Vector3d subtract = pointVertexfrom->estimate()-pointVertexto->estimate();
 
   double _distance = subtract.norm();
-  std::cerr << "_distance" <<_distance<< '\n';
-  std::cerr << "eroror" << distanceVertex->estimate() - _distance<<'\n';;
+  std::cerr << "_distance: " <<_distance<< '\n';
+  std::cerr << "error: " << distanceVertex->estimate() - _distance<<'\n';;
   // _error = distanceVertex->estimate() - subtract;
 };
 
 double EdgeRigidBodyDouble::compute_error_norm(){
   computeError();
-  Eigen::Vector3d err = _error;
-  return err.norm();
+  double err = _error[0];
+  return err;
 }
 
 void EdgeRigidBodyDouble::computeError(){
