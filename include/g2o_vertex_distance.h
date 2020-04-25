@@ -14,7 +14,6 @@ public:
     virtual void setToOriginImpl() {
         _estimate.fill(0.);
         // _estimate=0;
-
     };
 
     virtual bool read(std::istream& is){ return true; };

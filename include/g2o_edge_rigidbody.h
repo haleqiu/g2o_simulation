@@ -97,7 +97,6 @@ void EdgeRigidBodyDouble::computeError_debug()
   double _distance = subtract.norm();
   std::cerr << "_distance: " <<_distance<< '\n';
   std::cerr << "error: " << distanceVertex->estimate() - _distance<<'\n';;
-  // _error = distanceVertex->estimate() - subtract;
 };
 
 double EdgeRigidBodyDouble::compute_error_norm(){

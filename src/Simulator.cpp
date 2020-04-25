@@ -42,7 +42,7 @@ Simulator::Simulator(const std::string &strSettingsFile){
 void Simulator::InitializeFrames()
 {
   //first pose initialization
-  Frame firstpose(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,0),1);
+  Frame firstpose(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,0),iGlobalId++);
   gridposes.push_back(firstpose);
   //TODO: grid motion pattern
   std::cerr << "Adding Frames" << '\n';
@@ -128,6 +128,25 @@ void Simulator::AddingStaticLandmarks()
         }
       }
   }
+  //adding observatio
+  for (FrameVec::iterator it = gridposes.begin(); it != gridposes.end(); ++it){
+    for (PointPtrVec::iterator pt = it->landmarks.begin(); pt != it->landmarks.end(); ++pt){
+      Eigen::Vector3d trueObservation = it->transform.inverse() * (*pt)->truepos;
+      Eigen::Vector3d Observation;
+      Observation = trueObservation;
+      if ((*pt)->seenBy[0] == it->idx){//first estimation
+        Observation = it->simulatedtransform.inverse() * (*pt)->simulatedpos;//vector based measurement
+      }
+      else{
+        Observation[0] += Rand::gauss_rand(0., LandmarkNoise[0]);
+        Observation[1] += Rand::gauss_rand(0., LandmarkNoise[1]);
+        Observation[2] += Rand::gauss_rand(0., LandmarkNoise[2]);
+      }
+      PointMeasurement Pm = {Observation,(*pt)->idx};
+      it->vPointMeasurements.push_back(Pm);
+    }
+  }
+
 };
 
 void Simulator::InitRigidEdgesFully(PointPtrVec& dynamic_points, int obj_id){
@@ -277,13 +296,16 @@ void Simulator::AddingDynamicShape(){
     }
     //initialize the number of distance vertex
     if (it == gridposes.begin()){
-      InitRigidEdgesFully(dyobj.dylandmarks,1);
-      // InitRigidEdgesTwo(dyobj.dylandmarks,1);
+      if(DyVertexNum > 4) InitRigidEdgesFully(dyobj.dylandmarks,1);
+      else InitRigidEdgesTwo(dyobj.dylandmarks,1);
     }
     //TODO:add association
-
-    AddingRigidEdgeFully(dyobj);
-    // AddingRigidEdgeTwo(dyobj);
+    if(DyVertexNum > 4){
+      AddingRigidEdgeFully(dyobj);
+    }
+    else{
+      AddingRigidEdgeTwo(dyobj);
+    }
     it->seenedobjs.push_back(dyobj);
   }
 }
@@ -332,7 +354,7 @@ Frame Simulator::GenerateNewPose(const Frame& prev, const Eigen::Matrix4d& Motio
    Eigen::Vector3d transNoise,  Eigen::Vector3d& rotNoise)
 {
   Eigen::Matrix4d newpose = Motion * prev.truepose;
-  Frame nextPose(newpose, prev.idx + 1);
+  Frame nextPose(newpose, iGlobalId++);
   nextPose.sampleNoiseTransform(TransNoise, RotNoise);
   return nextPose;
 };
