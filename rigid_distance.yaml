@@ -1,0 +1,17 @@
+%YAML:1.0
+
+  Simulator.numNodes: 1
+  Simulator.steps: 5
+  Simulator.stepLen: 3.0
+  Simulator.boundArea: 50
+  Simulator.landmarksRange: 1
+  Simulator.landMarksPerSquareMeter: 1
+
+  #FALG
+  Optimizer.DistanceGroundTruthInit: 0
+  Optimizer.Debug: 1
+  Simulator.StraightMotion: 1
+
+  #Optimizer
+  Optimizer.Dynum: 12
+  Optimizer.vertexnum: 2

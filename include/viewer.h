@@ -139,5 +139,18 @@ void gtCircleVis (FrameVec gridposes,pcl::visualization::PCLVisualizer::Ptr view
   //If you want to update a point cloud that is already displayed, you must first call removePointCloud() and provide the ID of the cloud that is to be updated.
 }
 
+void pointMeasurementVis(FrameVec gridposes,pcl::visualization::PCLVisualizer::Ptr viewer){
+  pcl::PointCloud<pcl::PointXYZ>::Ptr basic_cloud_ptr (new pcl::PointCloud<pcl::PointXYZ>);
+  std::cout << "point Measurement visualziation.\n";
+  for (FrameVec::iterator it = gridposes.begin(); it != gridposes.end(); ++it){
+    pcl::PointXYZ camera_pose(it->transform.translation().x(),it->transform.translation().y(),it->transform.translation().z());
+    for (PointPtrVec::iterator pt = it->landmarks.begin(); pt != it->landmarks.end(); ++pt){
+        pcl::PointXYZ basic_point((*pt)->simulatedpos[0],(*pt)->simulatedpos[1],(*pt)->simulatedpos[2]);
+        basic_cloud_ptr->points.push_back(basic_point);
+        std::string idstring = std::to_string(iViewerIdx++);
+        viewer->addLine<pcl::PointXYZ> (basic_point,camera_pose, idstring);
+    }
+  }
+}
 
 #endif

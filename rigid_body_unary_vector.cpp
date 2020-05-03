@@ -93,13 +93,13 @@ int main (int argc, char** argv){
             distance_init = (p->first_point->simulatedpos - p->second_point->simulatedpos);
           }
           if (it == grid_simulation.gridposes.begin()){
-            VertexDistanceDouble* vDistance = new VertexDistanceDouble();
-            vDistance->setEstimate(distance_init.norm());
+            VertexDistance* vDistance = new VertexDistance();
+            vDistance->setEstimate(distance_init);
             vDistance->setId(p->distance_id);
             optimizer.addVertex(vDistance);
             if (grid_simulation.mbDebug){std::cerr << "adding distance: " <<p->distance_id <<'\n';}
           }
-          EdgeRigidBodyDouble* e = new EdgeRigidBodyDouble();
+          EdgeRigidBody* e = new EdgeRigidBody();
           e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>( optimizer.vertex(p->first_point->idx) ));
           e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>( optimizer.vertex(p->second_point->idx) ));
     		  e->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex*>( optimizer.vertex(p->distance_id) ));
@@ -108,10 +108,10 @@ int main (int argc, char** argv){
           // Eigen::Matrix3d rigidbody_sigma =rigidbodyweight* landmark_sigma.cwiseProduct(landmark_sigma).asDiagonal();
           // e->setInformation(rigidbody_sigma);
 
-          Eigen::MatrixXd Info = Eigen::MatrixXd::Identity(1,1);
-          Info(0,0) = 0.05;//LandmarkNoise(0);
+          Eigen::Vector3d landmark_sigma = grid_simulation.LandmarkNoise;
+          Eigen::Matrix3d rigidbody_sigma =rigidbodyweight* landmark_sigma.cwiseProduct(landmark_sigma).asDiagonal();
+          e->setInformation(rigidbody_sigma);
 
-          e->setInformation(Info);
           optimizer.addEdge(e);
       }
     }

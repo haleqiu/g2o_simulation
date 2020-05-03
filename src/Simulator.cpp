@@ -32,6 +32,7 @@ Simulator::Simulator(const std::string &strSettingsFile){
   // FALG
   mbDistanceGroundTruthInit = fsSettings["Optimizer.DistanceGroundTruthInit"];
   mbDebug = fsSettings["Optimizer.Debug"];
+  mbStraightMotion = fsSettings["Simulator.StraightMotion"];
 
   //Optimizer
   Dynum = fsSettings["Optimizer.Dynum"];
@@ -46,8 +47,13 @@ void Simulator::InitializeFrames()
   gridposes.push_back(firstpose);
   //TODO: grid motion pattern
   std::cerr << "Adding Frames" << '\n';
+  //adding straight motion
   Eigen::Affine3d TrueMotion = Eigen::Affine3d::Identity();
-  TrueMotion.translation() << 0,1,0;
+
+  if (mbStraightMotion){
+    TrueMotion.translation() << 0,stepLen,0;
+  }
+
 
   while ((int)gridposes.size() < numNodes) {//TODO steps
     if ((int)gridposes.size() == numNodes)
@@ -107,8 +113,8 @@ void Simulator::AddingStaticLandmarks()
         for (size_t i = 0; i < landmarksForCell.size(); ++i) {
           Point* l = landmarksForCell[i];
           //check for observation range
-          double dSqr = sqrt(it->transform.translation().x() - l->truepos[0]) +
-                        sqrt(it->transform.translation().y() - l->truepos[1]);
+          double dSqr = pow(it->transform.translation().x() - l->truepos[0], 2) +
+                        pow(it->transform.translation().y() - l->truepos[1], 2);
           if (dSqr > maxSensorSqr)
             continue;
           if (l->idx == 0)

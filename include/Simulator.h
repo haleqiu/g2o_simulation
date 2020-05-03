@@ -33,7 +33,7 @@ class Simulator{
     Simulator();
     Simulator(const std::string &strSettingsFile);
 
-    int iGlobalId;
+    int iGlobalId=0;
     LandmarkGrid grid;
     FrameVec gridposes;
     PointPtrVec Landmarks;
@@ -53,6 +53,7 @@ class Simulator{
     // FALG
     int mbDistanceGroundTruthInit = 0;
     int mbDebug = 0;
+    int mbStraightMotion = 1;
 
     //Optimizer
     int Dynum = 10;
