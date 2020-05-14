@@ -1,6 +1,6 @@
 #include "optimizer.h"
 
-void EvaluateDistanceError(g2o::SparseOptimizer& optimizer, std::vector<RigidEdge>& vRigidEdges){
+void EvaluateDistanceError(g2o::SparseOptimizer& optimizer, std::vector<RigidEdge>& vRigidEdges, const std::string words ){
   std::cout<<"optimizers vertexes and edges  "<<optimizer.vertices().size()<<"  "<<optimizer.edges().size()<<std::endl;
   //distance_error before //TODO: by point
   double dMeanDistanceErrorBefore = 0;
@@ -10,10 +10,10 @@ void EvaluateDistanceError(g2o::SparseOptimizer& optimizer, std::vector<RigidEdg
     dMeanDistanceErrorBefore += distance_error;
   }
   double average = dMeanDistanceErrorBefore/vRigidEdges.size();
-  std::cout << "The average distance error before: " << average << endl;
+  std::cout << "Distance error "<<words<< ": " << average << endl;
 }
 
-void EvaluatePointError(g2o::SparseOptimizer& optimizer, PointPtrVec& vLandmarks){
+void EvaluatePointError(g2o::SparseOptimizer& optimizer, PointPtrVec& vLandmarks,  const std::string words ){
   double dMeanPointErrorBefore = 0;
   for (PointPtrVec::iterator pt = vLandmarks.begin(); pt != vLandmarks.end(); ++pt){
     g2o::VertexSBAPointXYZ* vetp = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex((*pt)->idx));
@@ -21,16 +21,16 @@ void EvaluatePointError(g2o::SparseOptimizer& optimizer, PointPtrVec& vLandmarks
     dMeanPointErrorBefore += point_error;
   }
   double average_point_error_before = dMeanPointErrorBefore/vLandmarks.size();
-  std::cout << "The average point error before: " << average_point_error_before << endl;
+  std::cout << "Point error "<<words<< ": " << average_point_error_before << endl;
 }
 
-void EvaluateEdgeError(g2o::SparseOptimizer& optimizer){
-//Simple form
-  double average_edge_error_after = 0;
-  for (g2o::SparseOptimizer::EdgeSet::iterator it = optimizer.edges().begin(); it != optimizer.edges().end(); ++it) {
-      EdgeRigidBodyDouble* e = static_cast<EdgeRigidBodyDouble*>(*it);
-      average_edge_error_after += e->compute_error_norm();
-    }
-  average_edge_error_after = average_edge_error_after/optimizer.edges().size();
-  std::cout << "The average edge error after: " << average_edge_error_after << endl;
+void EvaluateCaemraPoseError(g2o::SparseOptimizer& optimizer,FrameVec& vFrame, const std::string words ){
+  double average_translation_error = 0;
+  for (FrameVec::iterator pt = vFrame.begin(); pt!=vFrame.end();++pt){
+    VertexSE3* vSE3 = static_cast<VertexSE3*>(optimizer.vertex(pt->idx));
+    double translation_error = (pt->transform.translation() - vSE3->estimate().translation()).norm();
+    average_translation_error+=translation_error;
+  }
+  average_translation_error = average_translation_error/vFrame.size();
+  std::cout << "Translation error "<<words<< ": " << average_translation_error << endl;
 }

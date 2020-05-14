@@ -30,6 +30,7 @@ struct DyObject{
   Eigen::Affine3d motion_transform;
   int frameid;
   RigidPairVec rigidbodypairs;
+  PointMeasurementVec pointmeasurements;
 };
 
 typedef std::vector<DyObject> ObjectVec;
@@ -45,9 +46,10 @@ class Frame{
     Eigen::Affine3d simulatedtransform = Eigen::Affine3d::Identity();//for pcl visualisation
     Eigen::Affine3d optimizedtransform = Eigen::Affine3d::Identity();//for pcl visualisation
 
-    //Frame(cv::Mat _R, cv::Mat _t, int id);
+    //Frame(cv::Mat _R, cv::Mat t, int id);
     Frame(Eigen::Vector3d eularangle, Eigen::Vector3d xyz, int id);
     Frame(Eigen::Matrix4d TrueMotion, int id);
+    Frame(Eigen::Affine3d Truetransform, int id);
     ObjectVec seenedobjs;
     PointMeasurementVec vPointMeasurements;
 

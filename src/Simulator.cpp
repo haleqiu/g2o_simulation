@@ -9,10 +9,6 @@ Simulator::Simulator(){
 };
 
 Simulator::Simulator(const std::string &strSettingsFile){
-  TransNoise << 0,0,0;
-  RotNoise << 0,0,0;
-  LandmarkNoise << 0.05,0.05,0.05;
-  std::cerr << "LandmarkNoise: "<<LandmarkNoise << '\n';
 
   cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
   if(!fsSettings.isOpened())
@@ -37,6 +33,18 @@ Simulator::Simulator(const std::string &strSettingsFile){
   //Optimizer
   Dynum = fsSettings["Optimizer.Dynum"];
   DyVertexNum = fsSettings["Optimizer.vertexnum"];
+  rigidbodyweight = fsSettings["Optimizer.rigidbodyweight"];
+  pointmeasurementweight = fsSettings["Optimizer.pointmeasurementweight"];
+  iterationsteps = fsSettings["Optimizer.iterationsteps"];
+
+  double rotnoise = fsSettings["Simulator.rotnoise"];
+  double transnoise = fsSettings["Simulator.transnoise"];
+  double landmarknoise = fsSettings["Simulator.landmarknoise"];
+  TransNoise << transnoise,transnoise,transnoise;
+  RotNoise << rotnoise,rotnoise,rotnoise;
+  LandmarkNoise << landmarknoise,landmarknoise,landmarknoise;
+  std::cerr << "LandmarkNoise: "<<LandmarkNoise << '\n';
+
 
 };
 
@@ -44,6 +52,7 @@ void Simulator::InitializeFrames()
 {
   //first pose initialization
   Frame firstpose(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,0),iGlobalId++);
+  firstpose.simulatedtransform = firstpose.transform;
   gridposes.push_back(firstpose);
   //TODO: grid motion pattern
   std::cerr << "Adding Frames" << '\n';
@@ -60,7 +69,7 @@ void Simulator::InitializeFrames()
       break;
     //TODO
     Frame nextpose = GenerateNewPose(gridposes.back(),
-    TrueMotion.matrix(), TransNoise, RotNoise);//add noise
+    TrueMotion, TransNoise, RotNoise);//add noise
     gridposes.push_back(nextpose);
   }
 };
@@ -83,9 +92,9 @@ void Simulator::AddingStaticLandmarks()
             Point* l = new Point(0);
             double offx, offy, offz;
             do {
-              offx = Rand::gauss_rand(-0.5*stepLen, 0.5*stepLen);
-              offy = Rand::gauss_rand(-0.5*stepLen, 0.5*stepLen);
-              offz = Rand::gauss_rand(-0.5*stepLen, 0.5*stepLen);
+              offx = Rand::uniform_rand(-0.5*stepLen, 0.5*stepLen);//generate the landmarks around the  camera pose
+              offy = Rand::uniform_rand(-0.5*stepLen, 0.5*stepLen);
+              offz = Rand::uniform_rand(-0.5*stepLen, 0.5*stepLen);
             } while ((offx*offx+ offy*offy) < 0.25*0.25);//lower bound of distance
             l->truepos[0] = cx + offx;
             l->truepos[1] = cy + offy;
@@ -119,39 +128,41 @@ void Simulator::AddingStaticLandmarks()
             continue;
           if (l->idx == 0)
             l->idx = iGlobalId++;
-          if (l->seenBy.size() == 0) {
             //consider the error of the VO
-            Eigen::Vector3d trueObservation = trueInv * l->truepos;//get the refference pose the error just accumulate with distance
-            Eigen::Vector3d observation = trueObservation;
-            //observation noise for sensor
-            observation[0] += Rand::gauss_rand(0., LandmarkNoise[0]);
-            observation[1] += Rand::gauss_rand(0., LandmarkNoise[1]);
-            observation[2] += Rand::gauss_rand(0., LandmarkNoise[2]);
-            l->simulatedpos = it->simulatedtransform * observation;//TODO: add VO noise
+          Eigen::Vector3d trueObservation = trueInv * l->truepos;//get the refference pose the error just accumulate with distance
+          Eigen::Vector3d observation = trueObservation;
+          //observation noise for sensor
+          observation[0] += Rand::gauss_rand(0., LandmarkNoise[0]);
+          observation[1] += Rand::gauss_rand(0., LandmarkNoise[1]);
+          observation[2] += Rand::gauss_rand(0., LandmarkNoise[2]);
+          if (l->seenBy.size() == 0) {//init the simulated pose
+            l->simulatedpos = it->simulatedtransform * observation;
           }
+          PointMeasurement Pm = {observation,l->idx};
+          it->vPointMeasurements.push_back(Pm);
           l->seenBy.push_back(it->idx);
           it->landmarks.push_back(l);
         }
       }
   }
   //adding observatio
-  for (FrameVec::iterator it = gridposes.begin(); it != gridposes.end(); ++it){
-    for (PointPtrVec::iterator pt = it->landmarks.begin(); pt != it->landmarks.end(); ++pt){
-      Eigen::Vector3d trueObservation = it->transform.inverse() * (*pt)->truepos;
-      Eigen::Vector3d Observation;
-      Observation = trueObservation;
-      if ((*pt)->seenBy[0] == it->idx){//first estimation
-        Observation = it->simulatedtransform.inverse() * (*pt)->simulatedpos;//vector based measurement
-      }
-      else{
-        Observation[0] += Rand::gauss_rand(0., LandmarkNoise[0]);
-        Observation[1] += Rand::gauss_rand(0., LandmarkNoise[1]);
-        Observation[2] += Rand::gauss_rand(0., LandmarkNoise[2]);
-      }
-      PointMeasurement Pm = {Observation,(*pt)->idx};
-      it->vPointMeasurements.push_back(Pm);
-    }
-  }
+  // for (FrameVec::iterator it = gridposes.begin(); it != gridposes.end(); ++it){
+  //   for (PointPtrVec::iterator pt = it->landmarks.begin(); pt != it->landmarks.end(); ++pt){
+  //     Eigen::Vector3d trueObservation = it->transform.inverse() * (*pt)->truepos;
+  //     Eigen::Vector3d Observation;
+  //     Observation = trueObservation;
+  //     if ((*pt)->seenBy[0] == it->idx){//first estimation
+  //       Observation = it->simulatedtransform.inverse() * (*pt)->simulatedpos;//vector based measurement
+  //     }
+  //     else{
+  //       Observation[0] += Rand::gauss_rand(0., LandmarkNoise[0]);
+  //       Observation[1] += Rand::gauss_rand(0., LandmarkNoise[1]);
+  //       Observation[2] += Rand::gauss_rand(0., LandmarkNoise[2]);
+  //     }
+  //     PointMeasurement Pm = {Observation,(*pt)->idx};
+  //     it->vPointMeasurements.push_back(Pm);
+  //   }
+  // }
 
 };
 
@@ -255,21 +266,21 @@ void Simulator::InitDynamicShape(){
     Point* l = new Point(-1);
     l->truepos[0] = std::cos(pcl::deg2rad(60.0))*(len*d);
     l->truepos[1] = std::sin(pcl::deg2rad(60.0))*(trianglelength - len*d);
-    l->truepos[2] = 0;
+    l->truepos[2] = 2;
     vDynamicShape.push_back(l);
   }
   for (int len=0; len < lengthnumber; len++){
     Point* l = new Point(-1);
     l->truepos[0] = std::cos(pcl::deg2rad(60.0))*trianglelength-len*d;
     l->truepos[1] = 0;
-    l->truepos[2] = 0;
+    l->truepos[2] = 2;
     vDynamicShape.push_back(l);
   }
   for (int len=0; len < lengthnumber; len++){
     Point* l = new Point(-1);
     l->truepos[0] = std::cos(pcl::deg2rad(60.0))*(len*d-trianglelength);
     l->truepos[1] = std::sin(pcl::deg2rad(60.0))*(len*d);
-    l->truepos[2] = 0;
+    l->truepos[2] = 2;
     vDynamicShape.push_back(l);
   }
 }
@@ -290,12 +301,21 @@ void Simulator::AddingDynamicShape(){
       l->truepos[1] = it->transform.translation().y() + (*pt)->truepos[1];
       l->truepos[2] = it->transform.translation().z() + (*pt)->truepos[2];
       // l->truepos = objmotion * l->truepos;
-      l->simulatedpos[0] =l->truepos[0] + Rand::gauss_rand(0., LandmarkNoise[0]);
-      l->simulatedpos[1] =l->truepos[1] + Rand::gauss_rand(0., LandmarkNoise[1]);
-      l->simulatedpos[2] =l->truepos[2] + Rand::gauss_rand(0., LandmarkNoise[2]);
 
       l->idx = iGlobalId++;
       l->seenBy.push_back(it->idx);
+
+      Eigen::Affine3d trueInv = it->transform.inverse();
+      Eigen::Vector3d trueObservation = trueInv * l->truepos;//get the refference pose the error just accumulate with distance
+      Eigen::Vector3d observation = trueObservation;
+
+      observation[0] += Rand::gauss_rand(0., LandmarkNoise[0]);
+      observation[1] += Rand::gauss_rand(0., LandmarkNoise[1]);
+      observation[2] += Rand::gauss_rand(0., LandmarkNoise[2]);
+      l->simulatedpos = it->simulatedtransform * observation;
+      PointMeasurement Pm = {observation,l->idx};
+      it->vPointMeasurements.push_back(Pm);
+
       dyobj.dylandmarks.push_back(l);
       dyobj.id = 2;
       vDynamicLandmarks.push_back(l);
@@ -316,6 +336,7 @@ void Simulator::AddingDynamicShape(){
   }
 }
 
+
 void Simulator::AddingDynamicCircle()
 {
   std::cerr << "Adding Dynamic points in circle" << '\n';
@@ -333,9 +354,16 @@ void Simulator::AddingDynamicCircle()
       l->truepos[1] = it->transform.translation().y() + sin (pcl::deg2rad(angle));
       l->truepos[2] = it->transform.translation().z();
       // l->truepos = objmotion * l->truepos;
-      l->simulatedpos[0] =l->truepos[0] + Rand::gauss_rand(0., LandmarkNoise[0]);
-      l->simulatedpos[1] =l->truepos[1] + Rand::gauss_rand(0., LandmarkNoise[1]);
-      l->simulatedpos[2] =l->truepos[2] + Rand::gauss_rand(0., LandmarkNoise[2]);
+      Eigen::Affine3d trueInv = it->transform.inverse();
+      Eigen::Vector3d trueObservation = trueInv * l->truepos;//get the refference pose the error just accumulate with distance
+      Eigen::Vector3d observation = trueObservation;
+
+      observation[0] += Rand::gauss_rand(0., LandmarkNoise[0]);
+      observation[1] += Rand::gauss_rand(0., LandmarkNoise[1]);
+      observation[2] += Rand::gauss_rand(0., LandmarkNoise[2]);
+      l->simulatedpos = it->simulatedtransform * observation;
+      PointMeasurement Pm = {observation,l->idx};
+      it->vPointMeasurements.push_back(Pm);
 
       l->idx = iGlobalId++;
       l->seenBy.push_back(it->idx);
@@ -356,11 +384,22 @@ void Simulator::AddingDynamicCircle()
   }
 }
 
-Frame Simulator::GenerateNewPose(const Frame& prev, const Eigen::Matrix4d& Motion,
+Frame Simulator::GenerateNewPose(const Frame& prev, Eigen::Affine3d Motion,
    Eigen::Vector3d transNoise,  Eigen::Vector3d& rotNoise)
 {
   Eigen::Matrix4d newpose = Motion * prev.truepose;
   Frame nextPose(newpose, iGlobalId++);
-  nextPose.sampleNoiseTransform(TransNoise, RotNoise);
+  if (mbCameraPoseNoise){
+    Motion = sampleNoiseTransform(Motion, TransNoise, RotNoise);
+  }
+  nextPose.simulatedtransform = Motion * prev.simulatedtransform;
   return nextPose;
 };
+
+Eigen::Affine3d Simulator::sampleNoiseTransform(Eigen::Affine3d Motion, Eigen::Vector3d& transNoise, Eigen::Vector3d& rotNoise){
+  Eigen::Affine3d transform = Eigen::Affine3d::Identity();
+  Eigen::Matrix3d _R = euler_zyx_to_rot<double>(Rand::gauss_rand(0, rotNoise[0]), Rand::gauss_rand(0, rotNoise[1]), Rand::gauss_rand(0, rotNoise[2]));
+  transform.rotate(Eigen::AngleAxisd(_R));
+  transform.translation()<<Rand::gauss_rand(0, transNoise[0]),Rand::gauss_rand(0, transNoise[1]),Rand::gauss_rand(0, transNoise[2]);
+  return transform * Motion;
+}

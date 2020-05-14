@@ -146,7 +146,7 @@ int main (int argc, char** argv){
     optimizedCircleVis(grid_simulation.gridposes,viewer);
     gtCircleVis(grid_simulation.gridposes,viewer);
     // rigidBodyEdgeVis(grid_simulation.gridposes,viewer);
-    // visulizeFrames(gridposes,viewer);
+    visulizeFrames(grid_simulation.gridposes,viewer);
     // VisulizeOptimized(gridposes,viewer);
   }
   while (!viewer->wasStopped ())

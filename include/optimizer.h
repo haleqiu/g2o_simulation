@@ -5,6 +5,7 @@
 #include "Frame.h"
 #include "Simulator.h"
 #include "g2o_vertex_distance.h"
+#include "g2o_vertex_se3.h"
 #include "g2o_edge_rigidbody.h"
 
 #include "Thirdparty/g2o/g2o/core/block_solver.h"
@@ -15,9 +16,11 @@
 #include "Thirdparty/g2o/g2o/solvers/linear_solver_dense.h"
 #include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
 
-void EvaluateDistanceError(g2o::SparseOptimizer& optimizer, std::vector<RigidEdge>& vRigidEdges);
-void EvaluatePointError(g2o::SparseOptimizer& optimizer,  PointPtrVec& vDynamicLandmarks);
-void EvaluateEdgeError(g2o::SparseOptimizer& optimizer);
+const std::string empty = std::string();
 
+void EvaluateDistanceError(g2o::SparseOptimizer& optimizer, std::vector<RigidEdge>& vRigidEdges, const std::string words = empty);
+void EvaluatePointError(g2o::SparseOptimizer& optimizer,  PointPtrVec& vDynamicLandmarks, const std::string words = empty);
+void EvaluateEdgeError(g2o::SparseOptimizer& optimizer, const std::string words = empty);
+void EvaluateCaemraPoseError(g2o::SparseOptimizer& optimizer, FrameVec& vFrame, const std::string words = empty);
 
 #endif

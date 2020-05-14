@@ -30,6 +30,11 @@ Frame::Frame(Eigen::Matrix4d TrueMotion, int id):idx(id){
   transform.matrix() = TrueMotion;
 };
 
+Frame::Frame(Eigen::Affine3d Truetransform, int id):idx(id){
+  transform = Truetransform;
+  truepose = Truetransform.matrix();
+}
+
 
 // tothink why is the Tcw word view current // this is the pattern of the ORB_SLAM2
 void Frame::SetPose(cv::Mat Tcw)//the pose of the camera pose
@@ -49,11 +54,4 @@ void Frame::UpdatePoseMatrices()// from Tcw to Twc?
     mTwc = cv::Mat::eye(4,4,CV_32F);
     mRwc.copyTo(mTwc.rowRange(0,3).colRange(0,3));
     mOw.copyTo(mTwc.rowRange(0,3).col(3));
-};
-
-void Frame::sampleNoiseTransform(Eigen::Vector3d& transNoise, Eigen::Vector3d& rotNoise)
-{
-  //TODO add uniform and guas
-  simulatedtransform = transform;
-  // std::cout << simulatedtransform.translation() << '\n';
 };

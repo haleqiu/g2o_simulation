@@ -20,6 +20,7 @@ src/Frame.cpp
 src/Point.cpp
 src/g2o_vertex_distance.cpp
 src/Simulator.cpp
+src/optimizer.cpp
 )
 
 find_package(PCL 1.2 REQUIRED)
@@ -43,3 +44,18 @@ target_link_libraries (cloud_viewer ${PROJECT_NAME})
 
 add_executable (rigid_body_straight rigid_body_straight.cpp)
 target_link_libraries (rigid_body_straight ${PROJECT_NAME})
+
+add_executable (rigid_body_unary rigid_body_unary.cpp)
+target_link_libraries (rigid_body_unary ${PROJECT_NAME})
+
+add_executable (rigid_body_unary_vector rigid_body_unary_vector.cpp)
+target_link_libraries (rigid_body_unary_vector ${PROJECT_NAME})
+
+add_executable (static_se3 static_se3.cpp)
+target_link_libraries (static_se3 ${PROJECT_NAME})
+
+add_executable (static_rigid_se3 static_rigid_se3.cpp)
+target_link_libraries (static_rigid_se3 ${PROJECT_NAME})
+
+add_executable (static_rigid_se3_control static_rigid_se3_control.cpp)
+target_link_libraries (static_rigid_se3_control ${PROJECT_NAME})

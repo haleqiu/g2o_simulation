@@ -1,11 +1,15 @@
 %YAML:1.0
 
-  Simulator.numNodes: 1
-  Simulator.steps: 5
-  Simulator.stepLen: 3.0
+  Simulator.numNodes: 30
+  Simulator.stepLen: 1.0
   Simulator.boundArea: 50
   Simulator.landmarksRange: 1
-  Simulator.landMarksPerSquareMeter: 1
+  Simulator.landMarksPerSquareMeter: 3
+
+  #noise
+  Simulator.landmarknoise: 0.05
+  Simulator.transnoise: 0.05
+  Simulator.rotnoise: 0.05
 
   #FALG
   Optimizer.DistanceGroundTruthInit: 0
@@ -14,4 +18,7 @@
 
   #Optimizer
   Optimizer.Dynum: 12
-  Optimizer.vertexnum: 2
+  Optimizer.vertexnum: 12
+  Optimizer.rigidbodyweight: 1
+  Optimizer.pointmeasurementweight: 1
+  Optimizer.iterationsteps: 3000

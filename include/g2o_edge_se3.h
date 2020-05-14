@@ -6,7 +6,7 @@
 
 #include "g2o_vertex_se3.h"
 
-class EdgeSE3PointXYZ : public g2o::BaseBinaryEdge<3, Vector3, g2o::VertexSE3Expmap, g2o::VertexSBAPointXYZ> {
+class EdgeSE3PointXYZ : public g2o::BaseBinaryEdge<3, Vector3, VertexSE3, g2o::VertexSBAPointXYZ> {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
     EdgeSE3PointXYZ(){
