@@ -34,35 +34,35 @@ class EdgeSE3PointXYZ : public g2o::BaseBinaryEdge<3, Vector3, VertexSE3, g2o::V
 
   };
 
-  // void EdgeSE3PointXYZ::linearizeOplus() {
-  //     g2o::VertexSE3Expmap *cam = static_cast<g2o::VertexSE3Expmap *>(_vertices[0]);
-  //     g2o::VertexSBAPointXYZ *vp = static_cast<g2o::VertexSBAPointXYZ *>(_vertices[1]);
-  //
-  //     Vector3 Zcam = cam->estimate().inverse() * vp->estimate();//se3.inverse
-  //
-  //     //  J(0,3) = -0.0;
-  //     J(0,4) = -2*Zcam(2);
-  //     J(0,5) = 2*Zcam(1);
-  //
-  //     J(1,3) = 2*Zcam(2);
-  //     //  J(1,4) = -0.0;
-  //     J(1,5) = -2*Zcam(0);
-  //
-  //     J(2,3) = -2*Zcam(1);
-  //     J(2,4) = 2*Zcam(0);
-  //     //  J(2,5) = -0.0;
-  //
-  //     J.block<3,3>(0,6) = cam->estimate().inverse().rotation().toRotationMatrix();;
-  //
-  //     Eigen::Matrix<double,3,9,Eigen::ColMajor> Jhom = J;
-  //
-  //     _jacobianOplusXi = Jhom.block<3,6>(0,0);
-  //     _jacobianOplusXj = Jhom.block<3,3>(0,6);
-  //
-  //     // std::cerr << "just linearized." << std::endl;
-  //     // std::cerr << "_jacobianOplusXi:" << std::endl << _jacobianOplusXi << std::endl;
-  //     // std::cerr << "_jacobianOplusXj:" << std::endl << _jacobianOplusXj << std::endl;
-  //   }
+//   void EdgeSE3PointXYZ::linearizeOplus() {
+//   g2o::VertexSE3Expmap *cam = static_cast<g2o::VertexSE3Expmap *>(_vertices[0]);
+//   g2o::VertexSBAPointXYZ *vp = static_cast<g2o::VertexSBAPointXYZ *>(_vertices[1]);
+
+//   Vector3 Zcam = cam->estimate().inverse() * vp->estimate();//se3.inverse
+
+//   //  J(0,3) = -0.0;
+//   J(0,4) = -2*Zcam(2);
+//   J(0,5) = 2*Zcam(1);
+
+//   J(1,3) = 2*Zcam(2);
+//   //  J(1,4) = -0.0;
+//   J(1,5) = -2*Zcam(0);
+
+//   J(2,3) = -2*Zcam(1);
+//   J(2,4) = 2*Zcam(0);
+//   //  J(2,5) = -0.0;
+
+//   J.block<3,3>(0,6) = cam->estimate().inverse().rotation().toRotationMatrix();;
+
+//   Eigen::Matrix<double,3,9,Eigen::ColMajor> Jhom = J;
+
+//   _jacobianOplusXi = Jhom.block<3,6>(0,0);
+//   _jacobianOplusXj = Jhom.block<3,3>(0,6);
+
+//   // std::cerr << "just linearized." << std::endl;
+//   // std::cerr << "_jacobianOplusXi:" << std::endl << _jacobianOplusXi << std::endl;
+//   // std::cerr << "_jacobianOplusXj:" << std::endl << _jacobianOplusXj << std::endl;
+// }
 
 void EdgeSE3PointXYZ::computeError() {
   //I don't need offset

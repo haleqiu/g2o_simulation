@@ -30,10 +30,16 @@ Simulator::Simulator(const std::string &strSettingsFile){
   mbDebug = fsSettings["Optimizer.Debug"];
   mbStraightMotion = fsSettings["Simulator.StraightMotion"];
 
+  // Mode
+  mbStatic = fsSettings["Mode.static"];
+  mbRigidity = fsSettings["Mode.rigidity"];
+  mbMotion = fsSettings["Mode.motion"];
+
   //Optimizer
   Dynum = fsSettings["Optimizer.Dynum"];
   DyVertexNum = fsSettings["Optimizer.vertexnum"];
   rigidbodyweight = fsSettings["Optimizer.rigidbodyweight"];
+  MotionSigma = fsSettings["Optimizer.motionweight"];
   pointmeasurementweight = fsSettings["Optimizer.pointmeasurementweight"];
   iterationsteps = fsSettings["Optimizer.iterationsteps"];
 
@@ -295,6 +301,18 @@ void Simulator::AddingDynamicShape(){
     objmotion.translation()<<0+Rand::uniform_rand(-0.5, 0.5),1+Rand::uniform_rand(-0.5, 0.5),0+Rand::uniform_rand(-0.5, 0.5);
     // initiate the dynamic object vector
     DyObject dyobj;
+    //initialize the number of distance vertex
+    if (it == gridposes.begin()){
+      if(DyVertexNum > 4) InitRigidEdgesFully(dyobj.dylandmarks,1);
+      else InitRigidEdgesTwo(dyobj.dylandmarks,1);
+    }
+    //TODO:add association
+    if(DyVertexNum > 4){
+      AddingRigidEdgeFully(dyobj);
+    }
+    else{
+      AddingRigidEdgeTwo(dyobj);
+    }
     for (PointPtrVec::iterator pt = vDynamicShape.begin(); pt != vDynamicShape.end();++pt){
       Point* l = new Point(0);
       l->truepos[0] = it->transform.translation().x() + (*pt)->truepos[0];
@@ -319,18 +337,6 @@ void Simulator::AddingDynamicShape(){
       dyobj.dylandmarks.push_back(l);
       dyobj.id = 2;
       vDynamicLandmarks.push_back(l);
-    }
-    //initialize the number of distance vertex
-    if (it == gridposes.begin()){
-      if(DyVertexNum > 4) InitRigidEdgesFully(dyobj.dylandmarks,1);
-      else InitRigidEdgesTwo(dyobj.dylandmarks,1);
-    }
-    //TODO:add association
-    if(DyVertexNum > 4){
-      AddingRigidEdgeFully(dyobj);
-    }
-    else{
-      AddingRigidEdgeTwo(dyobj);
     }
     it->seenedobjs.push_back(dyobj);
   }

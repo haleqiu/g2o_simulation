@@ -79,45 +79,49 @@ class EdgeRigidBodyDouble: public g2o::BaseMultiEdge<1, double>
     double delta_t; //to_time - from_time   positive
     double compute_error_norm();
 
+    virtual void linearizeOplus();
+
+    double _distance;
+    Eigen::Vector3d subtract;
+
 };
 
-void EdgeRigidBodyDouble::computeError_debug()
-{
-  const g2o::VertexSBAPointXYZ* pointVertexfrom = dynamic_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);	   	// first point Vector 3d
-  const g2o::VertexSBAPointXYZ* pointVertexto = dynamic_cast<const g2o::VertexSBAPointXYZ*>(_vertices[1]);	   	// next point
-  const VertexDistanceDouble* distanceVertex = dynamic_cast<const VertexDistanceDouble*>(_vertices[2]); // object to world pose
+void EdgeRigidBodyDouble::linearizeOplus(){
 
-  if (pointVertexfrom==nullptr||pointVertexto==nullptr||distanceVertex==nullptr)
-      std::cout<<"bad casting!!!!!!!!!!!!!"<<std::endl;
-  std::cerr << "pointVertexfrom->estimate()"<<"\n"<<pointVertexfrom->estimate() << '\n';
-  std::cerr << "pointVertexto->estimate()"<<"\n"<<pointVertexto->estimate() << '\n';
+  // const g2o::VertexSBAPointXYZ* pointVertexfrom = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);	   	// first point Vector 3d
+  // const g2o::VertexSBAPointXYZ* pointVertexto = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[1]);	   	// next point
 
-  Eigen::Vector3d subtract = pointVertexfrom->estimate()-pointVertexto->estimate();
+  // Eigen::Vector3d pi = pointVertexfrom->estimate();
+  // Eigen::Vector3d pj = pointVertexto->estimate();
+  // Eigen::Vector3d subtract =pi-pj;
+  // double _distance = subtract.norm();
+  Eigen::Vector3d J = subtract/_distance;
 
-  double _distance = subtract.norm();
-  std::cerr << "_distance: " <<_distance<< '\n';
-  std::cerr << "error: " << distanceVertex->estimate() - _distance<<'\n';;
-};
+  _jacobianOplus[2](0,0) = 1;
 
-double EdgeRigidBodyDouble::compute_error_norm(){
-  computeError();
-  double err = _error[0];
-  return err;
+  _jacobianOplus[0](0,0) = -J(0);
+  _jacobianOplus[0](0,1) = -J(1);
+  _jacobianOplus[0](0,2) = -J(2);
+
+  _jacobianOplus[1](0,0) = J(0);
+  _jacobianOplus[1](0,1) = J(1);
+  _jacobianOplus[1](0,2) = J(2);
+
 }
 
 void EdgeRigidBodyDouble::computeError(){
-  const g2o::VertexSBAPointXYZ* pointVertexfrom = dynamic_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);	   	// first point Vector 3d
-  const g2o::VertexSBAPointXYZ* pointVertexto = dynamic_cast<const g2o::VertexSBAPointXYZ*>(_vertices[1]);	   	// next point
-  const VertexDistanceDouble* distanceVertex = dynamic_cast<const VertexDistanceDouble*>(_vertices[2]); // object to world pose
+  const g2o::VertexSBAPointXYZ* pointVertexfrom = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[0]);	   	// first point Vector 3d
+  const g2o::VertexSBAPointXYZ* pointVertexto = static_cast<const g2o::VertexSBAPointXYZ*>(_vertices[1]);	   	// next point
+  const VertexDistanceDouble* distanceVertex = static_cast<const VertexDistanceDouble*>(_vertices[2]); // object to world pose
 
   if (pointVertexfrom==nullptr||pointVertexto==nullptr||distanceVertex==nullptr)
       std::cout<<"bad casting!!!!!!!!!!!!!"<<std::endl;
 
-  Eigen::Vector3d subtract = pointVertexfrom->estimate()-pointVertexto->estimate();
+  subtract = pointVertexfrom->estimate()-pointVertexto->estimate();
 
-  double _distance = subtract.norm();
+  _distance = subtract.norm();
 
-  _error[0] =  _distance-distanceVertex->estimate();
+  _error[0] = distanceVertex->estimate() - _distance;
 };
 
 #endif

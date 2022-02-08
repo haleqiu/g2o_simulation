@@ -56,11 +56,17 @@ class Simulator{
     int mbStraightMotion = 1;
     int mbCameraPoseNoise = 1;
 
+    // Mode
+    int mbStatic = 1;
+    int mbRigidity = 1;
+    int mbMotion = 1;
+
     //Optimizer
     int Dynum = 10;
     int DyVertexNum = 2;
     double rigidbodyweight = 1;
     double pointmeasurementweight = 1;
+    double MotionSigma = 1;
     int iterationsteps = 10;
     //expected identifier before numeric constant
     Eigen::Vector3d TransNoise;

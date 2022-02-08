@@ -1,10 +1,15 @@
 %YAML:1.0
 
-  Simulator.numNodes: 30
+  Simulator.numNodes: 18
   Simulator.stepLen: 1.0
   Simulator.boundArea: 50
   Simulator.landmarksRange: 1
   Simulator.landMarksPerSquareMeter: 3
+
+  #mode
+  Mode.static: 1
+  Mode.rigidity: 0
+  Mode.motion: 1
 
   #noise
   Simulator.landmarknoise: 0.05
@@ -19,6 +24,7 @@
   #Optimizer
   Optimizer.Dynum: 12
   Optimizer.vertexnum: 12
-  Optimizer.rigidbodyweight: 1
+  Optimizer.rigidbodyweight: 20
+  Optimizer.motionweight: 5
   Optimizer.pointmeasurementweight: 1
-  Optimizer.iterationsteps: 3000
+  Optimizer.iterationsteps: 10
